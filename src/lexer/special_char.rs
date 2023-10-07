@@ -1,4 +1,4 @@
-use super::{lexer::ParseFromConstStr, literal::Literal};
+use super::lexer::ParseFromConstStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpecialChar {
