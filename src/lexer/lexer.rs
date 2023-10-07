@@ -38,7 +38,7 @@ impl<'a> Lexer<'a> {
             }
 
             match view.chars().next() {
-                Some(c) if c.is_whitespace() && c != '\n' => {
+                Some(c) if c.is_whitespace() => {
                     self.index += 1;
                     continue;
                 }

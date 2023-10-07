@@ -1,10 +1,19 @@
+import sub from "lib/subtract";
+
+/* 
 import sub from "lib/subtract"
 
-// a comment
+type X = {
+    name: string,
+    age: int,
+    print: (printer: &any) => X,
+}
 
-fn add(lhs: int, rhs: int): int {
-    let sum: int = lhs + rhs
-    return sum
-} // comment here!
+let add = (lhs: int, rhs: int): int => {
+    let sum: int = lhs + rhs;
+    return sum;
+}
  
-add(123 /* some comment */ , 345)
+add(123, 345)
+
+*/

@@ -11,6 +11,15 @@ pub enum Literal {
     Char(char),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum AbstractLiteral {
+    Integer,
+    Float,
+    String,
+    Boolean,
+    Char,
+}
+
 impl ParseFromStr for Literal {
     fn parse_from_str(input: &str) -> Option<(Self, usize)> {
         if let Some((number, len)) = parse_int_literal(input) {

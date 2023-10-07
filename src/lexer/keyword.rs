@@ -4,8 +4,8 @@ use super::lexer::ParseFromConstStr;
 pub enum Keyword {
     Import,
     From,
-    Fn,
     Int,
+    Uint,
     Float,
     Char,
     Bool,
@@ -21,6 +21,9 @@ pub enum Keyword {
     True,
     False,
     Loop,
+    Type,
+    Any,
+    Let,
 }
 
 impl ParseFromConstStr for Keyword {
@@ -28,8 +31,8 @@ impl ParseFromConstStr for Keyword {
         match self {
             Keyword::Import => "import",
             Keyword::From => "from",
-            Keyword::Fn => "fn",
             Keyword::Int => "int",
+            Keyword::Uint => "uint",
             Keyword::Float => "float",
             Keyword::Char => "char",
             Keyword::Bool => "bool",
@@ -45,6 +48,9 @@ impl ParseFromConstStr for Keyword {
             Keyword::True => "true",
             Keyword::False => "false",
             Keyword::Loop => "loop",
+            Keyword::Type => "type",
+            Keyword::Any => "any",
+            Keyword::Let => "let",
         }
     }
 
@@ -55,8 +61,8 @@ impl ParseFromConstStr for Keyword {
         &[
             Keyword::Import,
             Keyword::From,
-            Keyword::Fn,
             Keyword::Int,
+            Keyword::Uint,
             Keyword::Float,
             Keyword::Char,
             Keyword::Bool,
@@ -72,6 +78,9 @@ impl ParseFromConstStr for Keyword {
             Keyword::True,
             Keyword::False,
             Keyword::Loop,
+            Keyword::Type,
+            Keyword::Any,
+            Keyword::Let,
         ]
     }
 }

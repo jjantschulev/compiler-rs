@@ -1,19 +1,6 @@
-use super::lexer::ParseFromStr;
+use super::{keyword, lexer::ParseFromConstStr};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ident(String);
-
-impl ParseFromStr for Ident {
-    fn parse_from_str(input: &str) -> Option<(Self, usize)> {
-        if let Some((ident, len)) = parse_identifier(input) {
-            return Some((Self(ident), len));
-        }
-
-        None
-    }
-}
-
-fn parse_identifier(input: &str) -> Option<(String, usize)> {
+pub fn parse_identifier(input: &str) -> Option<(String, usize)> {
     let mut iterator = input.chars();
 
     let mut len = 1;
@@ -27,6 +14,13 @@ fn parse_identifier(input: &str) -> Option<(String, usize)> {
         .is_some_and(|c| c.is_alphanumeric() || c == '_')
     {
         len += 1;
+    }
+
+    // Make sure that this is not a keyword
+    for keyword in keyword::Keyword::enumarate().iter() {
+        if keyword.to_str() == &input[..len] {
+            return None;
+        }
     }
 
     Some((input[..len].to_string(), len))

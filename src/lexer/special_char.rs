@@ -1,4 +1,4 @@
-use super::lexer::ParseFromConstStr;
+use super::{lexer::ParseFromConstStr, literal::Literal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpecialChar {
@@ -12,7 +12,7 @@ pub enum SpecialChar {
     Semicolon,
     Colon,
     Dot,
-    NewLine,
+    Ref,
 }
 
 impl ParseFromConstStr for SpecialChar {
@@ -28,7 +28,7 @@ impl ParseFromConstStr for SpecialChar {
             SpecialChar::Semicolon => ";",
             SpecialChar::Colon => ":",
             SpecialChar::Dot => ".",
-            SpecialChar::NewLine => "\n",
+            SpecialChar::Ref => "&",
         }
     }
 
@@ -47,7 +47,7 @@ impl ParseFromConstStr for SpecialChar {
             SpecialChar::Semicolon,
             SpecialChar::Colon,
             SpecialChar::Dot,
-            SpecialChar::NewLine,
+            SpecialChar::Ref,
         ]
     }
 }
