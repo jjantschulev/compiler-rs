@@ -1,0 +1,13 @@
+// Incomplete
+
+Program = ImportStatement[] BlockContent
+
+ImportStatement = "import" Ident
+
+BlockContent = 
+
+FnDef = "fn" Ident FnExpr
+
+FnExpr = "(" FnArg[] ")" ":" Type "{" BlockContent "}"
+FnArg = Ident ":" Type
+

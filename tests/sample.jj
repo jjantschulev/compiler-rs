@@ -1,0 +1,10 @@
+import sub from "lib/subtract"
+
+// a comment
+
+fn add(lhs: int, rhs: int): int {
+    let sum: int = lhs + rhs
+    return sum
+} // comment here!
+ 
+add(123 /* some comment */ , 345)
