@@ -9,6 +9,7 @@ pub enum Expression {
     String(String),
     Char(char),
     Bool(bool),
+
     Identifier(String),
 
     Add(Box<Expression>, Box<Expression>),
@@ -31,12 +32,25 @@ pub enum Expression {
 }
 
 pub fn parse_expression(lexer: &mut Lexer) -> Result<Expression, ParseError> {
-    match lexer.expect_peek()? {
-        TokenType::Integer(i) => {
-            let num = *i;
-            lexer.next();
-            Ok(Expression::Int(num))
-        }
-        tok => return Err(ParseError::UnexpectedToken(tok.clone())),
-    }
+    parse_literal(lexer)
+}
+
+pub fn parse_literal(lexer: &mut Lexer) -> Result<Expression, ParseError> {
+    lexer
+        .parse_int()
+        .map(|v| Expression::Int(v))
+        .or_else(|_| lexer.parse_float().map(|v| Expression::Float(v)))
+        .or_else(|_| lexer.parse_char().map(|v| Expression::Char(v)))
+        .or_else(|_| lexer.parse_bool().map(|v| Expression::Bool(v)))
+        .or_else(|_| lexer.parse_string().map(|v| Expression::String(v)))
+        .or_else(|_| lexer.parse_ident().map(|v| Expression::Identifier(v)))
+        .or_else(|e| {
+            if lexer.parse_token(&TokenType::LParen).is_ok() {
+                let expr = parse_expression(lexer)?;
+                lexer.parse_token(&TokenType::RParen)?;
+                Ok(expr)
+            } else {
+                Err(e)
+            }
+        })
 }

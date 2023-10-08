@@ -9,20 +9,20 @@ pub fn parse_list<T>(
 ) -> Result<Vec<T>, ParseError> {
     let mut items = Vec::new();
 
-    lexer.expect_token(start)?;
+    lexer.parse_token(start)?;
 
     loop {
-        if lexer.expect_token(end).is_ok() {
+        if lexer.parse_token(end).is_ok() {
             break;
         }
 
         items.push(parse_item(lexer)?);
 
-        if lexer.expect_token(end).is_ok() {
+        if lexer.parse_token(end).is_ok() {
             break;
         }
 
-        lexer.expect_token(separator)?;
+        lexer.parse_token(separator)?;
     }
 
     Ok(items)

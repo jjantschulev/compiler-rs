@@ -1,9 +1,12 @@
+
+
 import a, b, from "path/to/file";
 
 type MyType = {
-    name: string,
+    name: string[3],
     age: int,
-};
+    fish: (&int) => void
+}[][3];
 
 while 1 {
     type X = Foo;
@@ -12,7 +15,7 @@ while 1 {
 let printf: (string) => void = 0xFFFFabe231de321;
 
 loop {
-    1;
+    (((((12.34)))));
 }
 
 

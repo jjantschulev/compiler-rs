@@ -47,17 +47,9 @@ fn parse_array_type(lexer: &mut Lexer) -> Result<Option<i64>, ParseError> {
     match lexer.expect_peek()? {
         TokenType::LBracket => {
             lexer.next();
-            let len = match lexer.expect_peek()? {
-                TokenType::RBracket => None,
-                TokenType::Integer(len) => {
-                    let len = *len;
-                    lexer.next();
-                    Some(len)
-                }
-                tok => return Err(ParseError::UnexpectedToken(tok.clone())),
-            };
-            lexer.expect_token(&TokenType::RBracket)?;
-            Ok(len)
+            let len = lexer.parse_int();
+            lexer.parse_token(&TokenType::RBracket)?;
+            Ok(len.ok())
         }
         tok => Err(ParseError::UnexpectedToken(tok.clone())),
     }
@@ -90,11 +82,8 @@ fn parse_type_without_array(lexer: &mut Lexer) -> Result<Type, ParseError> {
             Ok(Type::Void)
         }
         TokenType::Identifier(_) => {
-            if let Some(TokenType::Identifier(name)) = lexer.next() {
-                Ok(Type::Named(name))
-            } else {
-                unreachable!()
-            }
+            let name = lexer.parse_ident()?;
+            Ok(Type::Named(name))
         }
         TokenType::Ref => {
             lexer.next();
@@ -110,7 +99,7 @@ fn parse_type_without_array(lexer: &mut Lexer) -> Result<Type, ParseError> {
                 |l| parse_type(l).map(Rc::new),
             )?;
 
-            if lexer.expect_token(&TokenType::FuncArrow).is_ok() {
+            if lexer.parse_token(&TokenType::FuncArrow).is_ok() {
                 let ret = parse_type(lexer)?;
                 Ok(Type::Function {
                     args: fields,
@@ -128,11 +117,8 @@ fn parse_type_without_array(lexer: &mut Lexer) -> Result<Type, ParseError> {
                 &TokenType::Comma,
                 &TokenType::RBrace,
                 |l| {
-                    let name = match l.expect_next()? {
-                        TokenType::Identifier(name) => name,
-                        tok => return Err(ParseError::UnexpectedToken(tok.clone())),
-                    };
-                    l.expect_token(&TokenType::Colon)?;
+                    let name = l.parse_ident()?;
+                    l.parse_token(&TokenType::Colon)?;
                     let ty = parse_type(l)?;
                     Ok((name, Rc::new(ty)))
                 },

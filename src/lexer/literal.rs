@@ -53,10 +53,11 @@ pub fn parse_int_literal(input: &str) -> Option<(i64, usize)> {
 }
 
 pub fn parse_float_literal(input: &str) -> Option<(f64, usize)> {
-    let mut iterator = input.chars();
+    let mut iterator = input.chars().peekable();
     let mut len_before = 0;
 
-    while iterator.next().is_some_and(|c| c.is_digit(10)) {
+    while iterator.peek().is_some_and(|c| c.is_digit(10)) {
+        iterator.next();
         len_before += 1;
     }
 

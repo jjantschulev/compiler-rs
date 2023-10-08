@@ -63,11 +63,11 @@ pub fn parse_block(lexer: &mut Lexer, enclosed_by_brackets: bool) -> Result<Bloc
     let mut statements = Vec::new();
 
     if enclosed_by_brackets {
-        lexer.expect_token(&TokenType::LBrace)?;
+        lexer.parse_token(&TokenType::LBrace)?;
     }
 
     loop {
-        if enclosed_by_brackets && lexer.expect_token(&TokenType::RBrace).is_ok() {
+        if enclosed_by_brackets && lexer.parse_token(&TokenType::RBrace).is_ok() {
             break;
         }
         match lexer.peek() {
@@ -83,22 +83,16 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
     match lexer.expect_peek()? {
         TokenType::Type => {
             lexer.next();
-            let name = match lexer.expect_next()? {
-                TokenType::Identifier(name) => name,
-                tok => return Err(ParseError::UnexpectedToken(tok.clone())),
-            };
-            lexer.expect_token(&TokenType::Assign)?;
+            let name = lexer.parse_ident()?;
+            lexer.parse_token(&TokenType::Assign)?;
             let typ = parse_type(lexer)?;
-            lexer.expect_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&TokenType::Semicolon)?;
             Ok(Statement::TypeDef { name, typ })
         }
 
         TokenType::Let => {
             lexer.next();
-            let name = match lexer.expect_next()? {
-                TokenType::Identifier(name) => name,
-                tok => return Err(ParseError::UnexpectedToken(tok.clone())),
-            };
+            let name = lexer.parse_ident()?;
 
             let typ = match lexer.expect_peek()? {
                 TokenType::Colon => {
@@ -108,11 +102,11 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
                 _ => None,
             };
 
-            lexer.expect_token(&TokenType::Assign)?;
+            lexer.parse_token(&TokenType::Assign)?;
 
             let expr = parse_expression(lexer)?;
 
-            lexer.expect_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&TokenType::Semicolon)?;
 
             Ok(Statement::VarDef { name, typ, expr })
         }
@@ -124,18 +118,12 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
                 &TokenType::Comma,
                 &TokenType::From,
                 |lexer| {
-                    let name = match lexer.expect_next()? {
-                        TokenType::Identifier(name) => Ok(name),
-                        tok => Err(ParseError::UnexpectedToken(tok.clone())),
-                    }?;
+                    let name = lexer.parse_ident()?;
 
                     match lexer.expect_peek()? {
                         TokenType::As => {
                             lexer.next();
-                            let alias = match lexer.expect_next()? {
-                                TokenType::Identifier(alias) => Ok(alias),
-                                tok => Err(ParseError::UnexpectedToken(tok.clone())),
-                            }?;
+                            let alias = lexer.parse_ident()?;
                             Ok(ImportIdentifier { name, alias })
                         }
                         _ => Ok(ImportIdentifier {
@@ -146,12 +134,9 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
                 },
             )?;
 
-            let path = match lexer.expect_next()? {
-                TokenType::String(string) => string,
-                tok => return Err(ParseError::UnexpectedToken(tok.clone())),
-            };
+            let path = lexer.parse_string()?;
 
-            lexer.expect_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&TokenType::Semicolon)?;
 
             Ok(Statement::Import {
                 path,
@@ -174,7 +159,7 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
 
         _ => {
             let expr = parse_expression(lexer)?;
-            lexer.expect_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&TokenType::Semicolon)?;
             Ok(Statement::Expr(expr))
         }
     }

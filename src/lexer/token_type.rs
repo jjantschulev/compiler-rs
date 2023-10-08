@@ -18,6 +18,7 @@ pub enum TokenType {
     As,
     From,
     Let,
+    Yeet,
 
     // Control Flow
     If,
@@ -109,12 +110,12 @@ impl TokenType {
     }
 
     pub fn parse_literal(input: &str) -> Option<(TokenType, usize)> {
-        if let Some((number, len)) = parse_int_literal(input) {
-            return Some((TokenType::Integer(number), len));
-        }
-
         if let Some((number, len)) = parse_float_literal(input) {
             return Some((TokenType::Float(number), len));
+        }
+
+        if let Some((number, len)) = parse_int_literal(input) {
+            return Some((TokenType::Integer(number), len));
         }
 
         if let Some((string, len)) = parse_string_literal(input) {
@@ -161,6 +162,7 @@ impl TokenType {
             "from" => Some(TokenType::From),
             "let" => Some(TokenType::Let),
             "as" => Some(TokenType::As),
+            "yeet" => Some(TokenType::Yeet),
 
             // Control Flow
             "if" => Some(TokenType::If),
