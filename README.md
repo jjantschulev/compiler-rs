@@ -65,3 +65,9 @@ All primitives are stored as words. Types are just for compile type type checkin
 # Exceptions
 
 Exceptions are thrown with the `yeet` keyword. That is all I care about rn. Maybe you can catch them with the `sike, you thought` keyword. Maybe not. Who knows.
+
+# License
+
+not open source, reference me wen u reuse the source code.
+
+enterprise cost: $2.99 per line of code compiled.
