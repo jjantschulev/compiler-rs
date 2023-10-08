@@ -15,6 +15,7 @@ pub enum TokenType {
 
     // Misc Keywords
     Import,
+    As,
     From,
     Let,
 
@@ -159,6 +160,7 @@ impl TokenType {
             "import" => Some(TokenType::Import),
             "from" => Some(TokenType::From),
             "let" => Some(TokenType::Let),
+            "as" => Some(TokenType::As),
 
             // Control Flow
             "if" => Some(TokenType::If),

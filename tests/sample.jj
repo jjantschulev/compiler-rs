@@ -1,12 +1,20 @@
-{
+import a, b, from "path/to/file";
+
+type MyType = {
     name: string,
-    age: (int, &float),
-    go_swimming: () => {
-        water: bool,
-        temp: Temperature,
-        measure: (&int, &int) => float,
-    },
+    age: int,
+};
+
+while 1 {
+    type X = Foo;
 }
+
+let printf: (string) => void = 0xFFFFabe231de321;
+
+loop {
+    1;
+}
+
 
 /* 
 import sub from "lib/subtract"

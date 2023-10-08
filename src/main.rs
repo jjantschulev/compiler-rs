@@ -1,4 +1,4 @@
-use compiler_rs::{lexer::lexer::Lexer, parser::types::parse_type};
+use compiler_rs::{lexer::lexer::Lexer, parser::statements::parse_block};
 use std::fs::read_to_string;
 
 fn main() {
@@ -6,5 +6,5 @@ fn main() {
 
     let mut lexer = Lexer::new(&source);
 
-    dbg! { parse_type(&mut lexer) };
+    dbg! { parse_block(&mut lexer, false) };
 }
