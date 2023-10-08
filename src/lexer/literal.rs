@@ -1,55 +1,5 @@
 use std::str::Chars;
 
-use super::lexer::ParseFromStr;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
-    Integer(i64),
-    Float(f64),
-    String(String),
-    Boolean(bool),
-    Char(char),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum AbstractLiteral {
-    Integer,
-    Float,
-    String,
-    Boolean,
-    Char,
-}
-
-impl ParseFromStr for Literal {
-    fn parse_from_str(input: &str) -> Option<(Self, usize)> {
-        if let Some((number, len)) = parse_int_literal(input) {
-            return Some((Literal::Integer(number), len));
-        }
-
-        if let Some((number, len)) = parse_float_literal(input) {
-            return Some((Literal::Float(number), len));
-        }
-
-        if let Some((string, len)) = parse_string_literal(input) {
-            return Some((Literal::String(string), len));
-        }
-
-        if let Some((c, len)) = parse_char_literal(input) {
-            return Some((Literal::Char(c), len));
-        }
-
-        if input.starts_with("true") {
-            return Some((Literal::Boolean(true), 4));
-        }
-
-        if input.starts_with("false") {
-            return Some((Literal::Boolean(false), 5));
-        }
-
-        None
-    }
-}
-
 enum Base {
     Binary,
     Decimal,
@@ -84,7 +34,7 @@ impl Base {
     }
 }
 
-fn parse_int_literal(input: &str) -> Option<(i64, usize)> {
+pub fn parse_int_literal(input: &str) -> Option<(i64, usize)> {
     let base = Base::parse_from_str(input);
     let mut len = base.prefix_len();
     let mut iterator = input.chars().skip(len);
@@ -102,7 +52,7 @@ fn parse_int_literal(input: &str) -> Option<(i64, usize)> {
     Some((number, len))
 }
 
-fn parse_float_literal(input: &str) -> Option<(f64, usize)> {
+pub fn parse_float_literal(input: &str) -> Option<(f64, usize)> {
     let mut iterator = input.chars();
     let mut len_before = 0;
 
@@ -155,7 +105,7 @@ fn parse_next_char(iterator: &mut Chars) -> Option<(char, usize)> {
     Some((c, len))
 }
 
-fn parse_char_literal(input: &str) -> Option<(char, usize)> {
+pub fn parse_char_literal(input: &str) -> Option<(char, usize)> {
     let mut iterator = input.chars();
     if iterator.next() != Some('\'') {
         return None;
@@ -170,7 +120,7 @@ fn parse_char_literal(input: &str) -> Option<(char, usize)> {
     Some((c, len + 2))
 }
 
-fn parse_string_literal(input: &str) -> Option<(String, usize)> {
+pub fn parse_string_literal(input: &str) -> Option<(String, usize)> {
     let mut iterator = input.chars();
     if iterator.next() != Some('"') {
         return None;

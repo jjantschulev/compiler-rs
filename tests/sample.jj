@@ -1,4 +1,12 @@
-import sub from "lib/subtract";
+{
+    name: string,
+    age: (int, &float),
+    go_swimming: () => {
+        water: bool,
+        temp: Temperature,
+        measure: (&int, &int) => float,
+    },
+}
 
 /* 
 import sub from "lib/subtract"

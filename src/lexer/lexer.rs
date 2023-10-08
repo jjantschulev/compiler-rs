@@ -1,95 +1,49 @@
-use super::token_type::{Token, TokenType};
+use std::iter::Peekable;
 
+use crate::parser::helpers::ParseError;
+
+use super::{raw_lexer::RawLexer, token_type::TokenType};
+
+#[derive(Debug, Clone)]
 pub struct Lexer<'a> {
-    input: &'a str,
-    index: usize,
+    raw: Peekable<RawLexer<'a>>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
-        Self { input, index: 0 }
-    }
-
-    fn consume_until_match(&mut self, pattern: &str) {
-        loop {
-            let view = &self.input[self.index..];
-            if view.starts_with(pattern) {
-                self.index += pattern.len();
-                break;
-            }
-            self.index += 1;
+        Self {
+            raw: RawLexer::new(input).peekable(),
         }
     }
 
-    fn consume_till_next_token(&mut self) {
-        loop {
-            let view = &self.input[self.index..];
+    pub fn peek(&mut self) -> Option<&TokenType> {
+        self.raw.peek()
+    }
 
-            if view.starts_with("//") {
-                self.index += 2;
-                self.consume_until_match("\n");
-                continue;
+    pub fn expect_token(&mut self, token: &TokenType) -> Result<TokenType, ParseError> {
+        match self.raw.peek() {
+            Some(tok) if tok == token => {
+                let tok = tok.clone();
+                self.raw
+                    .next()
+                    .ok_or_else(|| ParseError::UnexpectedToken(tok))
             }
-
-            if view.starts_with("/*") {
-                self.index += 2;
-                self.consume_until_match("*/");
-                continue;
-            }
-
-            match view.chars().next() {
-                Some(c) if c.is_whitespace() => {
-                    self.index += 1;
-                    continue;
-                }
-                _ => break,
-            }
+            Some(tok) => Err(ParseError::UnexpectedToken(tok.clone())),
+            None => Err(ParseError::UnexpectedEOF()),
         }
+    }
+
+    pub fn expect_next(&mut self) -> Result<TokenType, ParseError> {
+        self.raw.next().ok_or(ParseError::UnexpectedEOF())
+    }
+    pub fn expect_peek(&mut self) -> Result<&TokenType, ParseError> {
+        self.raw.peek().ok_or(ParseError::UnexpectedEOF())
     }
 }
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = Token;
-
+    type Item = TokenType;
     fn next(&mut self) -> Option<Self::Item> {
-        self.consume_till_next_token();
-        let view = &self.input[self.index..];
-
-        let (next_tok, len) = TokenType::next_token(view)?;
-
-        self.index += len;
-
-        Some(Token {
-            token: next_tok,
-            raw: view[..len].to_string(),
-            index: self.index - len,
-        })
-    }
-}
-
-pub trait ParseFromStr {
-    fn parse_from_str(input: &str) -> Option<(Self, usize)>
-    where
-        Self: Sized;
-}
-
-pub trait ParseFromConstStr {
-    fn to_str(&self) -> &'static str;
-    fn enumarate<'a>() -> &'a [Self]
-    where
-        Self: Sized;
-
-    fn parse_from_str(input: &str) -> Option<(Self, usize)>
-    where
-        Self: Sized + Clone,
-    {
-        for item in Self::enumarate() {
-            let item_str = item.to_str();
-            if input.starts_with(item_str) {
-                return Some((item.clone(), item_str.len()));
-            }
-        }
-
-        None
+        self.raw.next()
     }
 }
