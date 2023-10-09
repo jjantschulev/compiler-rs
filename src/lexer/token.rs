@@ -19,6 +19,7 @@ pub enum Token {
     From,
     Let,
     Yeet,
+    Null,
 
     // Control Flow
     If,
@@ -167,6 +168,7 @@ impl Token {
             "let" => Some(Token::Let),
             "as" => Some(Token::As),
             "yeet" => Some(Token::Yeet),
+            "null" => Some(Token::Null),
 
             // Control Flow
             "if" => Some(Token::If),

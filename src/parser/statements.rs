@@ -32,29 +32,7 @@ pub enum Statement {
         cond: Expression,
         body: Block,
     },
-    For {
-        init: Option<Box<Statement>>,
-        cond: Option<Expression>,
-        step: Option<Expression>,
-        body: Block,
-    },
     Assign {
-        lhs: Expression,
-        rhs: Expression,
-    },
-    AddAssign {
-        lhs: Expression,
-        rhs: Expression,
-    },
-    SubAssign {
-        lhs: Expression,
-        rhs: Expression,
-    },
-    MulAssign {
-        lhs: Expression,
-        rhs: Expression,
-    },
-    DivAssign {
         lhs: Expression,
         rhs: Expression,
     },
@@ -178,6 +156,17 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
             Ok(Statement::Loop(body))
         }
 
+        Token::Return => {
+            lexer.next();
+            let expr = if lexer.parse_token(&Token::Semicolon).is_ok() {
+                None
+            } else {
+                Some(parse_expression(lexer)?)
+            };
+            lexer.parse_token(&Token::Semicolon)?;
+            Ok(Statement::Return(expr))
+        }
+
         _ => {
             let expr = parse_expression(lexer)?;
 
@@ -188,19 +177,31 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
             } else if lexer.parse_token(&Token::AddAssign).is_ok() {
                 let rhs = parse_expression(lexer)?;
                 lexer.parse_token(&Token::Semicolon)?;
-                Ok(Statement::AddAssign { lhs: expr, rhs })
+                Ok(Statement::Assign {
+                    lhs: expr.clone(),
+                    rhs: Expression::Add(Box::new(expr), Box::new(rhs)),
+                })
             } else if lexer.parse_token(&Token::SubAssign).is_ok() {
                 let rhs = parse_expression(lexer)?;
                 lexer.parse_token(&Token::Semicolon)?;
-                Ok(Statement::SubAssign { lhs: expr, rhs })
+                Ok(Statement::Assign {
+                    lhs: expr.clone(),
+                    rhs: Expression::Sub(Box::new(expr), Box::new(rhs)),
+                })
             } else if lexer.parse_token(&Token::MulAssign).is_ok() {
                 let rhs = parse_expression(lexer)?;
                 lexer.parse_token(&Token::Semicolon)?;
-                Ok(Statement::MulAssign { lhs: expr, rhs })
-            } else if lexer.parse_token(&Token::SubAssign).is_ok() {
+                Ok(Statement::Assign {
+                    lhs: expr.clone(),
+                    rhs: Expression::Mul(Box::new(expr), Box::new(rhs)),
+                })
+            } else if lexer.parse_token(&Token::DivAssign).is_ok() {
                 let rhs = parse_expression(lexer)?;
                 lexer.parse_token(&Token::Semicolon)?;
-                Ok(Statement::SubAssign { lhs: expr, rhs })
+                Ok(Statement::Assign {
+                    lhs: expr.clone(),
+                    rhs: Expression::Div(Box::new(expr), Box::new(rhs)),
+                })
             } else {
                 lexer.parse_token(&Token::Semicolon)?;
                 Ok(Statement::Expr(expr))

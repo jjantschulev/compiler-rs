@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{boxed::Box, collections::HashMap};
 
 use crate::lexer::{lexer::Lexer, token::Token};
 
@@ -13,12 +13,18 @@ pub enum Type {
     Bool,
     Void,
     Named(String),
-    Ptr(Rc<Type>),
-    SizedArray { element: Rc<Type>, len: i64 },
-    Array { element: Rc<Type> },
-    Struct { fields: HashMap<String, Rc<Type>> },
-    Tuple { fields: Vec<Rc<Type>> },
-    Function { args: Vec<Rc<Type>>, ret: Rc<Type> },
+    Ptr(Box<Type>),
+    SizedArray {
+        element: Box<Type>,
+        len: i64,
+    },
+    Array(Box<Type>),
+    Struct(HashMap<String, Type>),
+    Tuple(Vec<Box<Type>>),
+    Function {
+        args: Vec<Box<Type>>,
+        ret: Box<Type>,
+    },
 }
 
 pub fn parse_type(lexer: &mut Lexer) -> Result<Type, ParseError> {
@@ -28,12 +34,10 @@ pub fn parse_type(lexer: &mut Lexer) -> Result<Type, ParseError> {
         if let Ok(len) = parse_array_type(lexer) {
             ty = match len {
                 Some(len) => Type::SizedArray {
-                    element: Rc::new(ty),
+                    element: Box::new(ty),
                     len,
                 },
-                None => Type::Array {
-                    element: Rc::new(ty),
-                },
+                None => Type::Array(Box::new(ty)),
             };
         } else {
             break;
@@ -88,21 +92,21 @@ fn parse_type_without_array(lexer: &mut Lexer) -> Result<Type, ParseError> {
         Token::Ref => {
             lexer.next();
             let ty = parse_type(lexer)?;
-            Ok(Type::Ptr(Rc::new(ty)))
+            Ok(Type::Ptr(Box::new(ty)))
         }
         Token::LParen => {
             let fields = parse_list(lexer, &Token::LParen, &Token::Comma, &Token::RParen, |l| {
-                parse_type(l).map(Rc::new)
+                parse_type(l).map(Box::new)
             })?;
 
             if lexer.parse_token(&Token::FuncArrow).is_ok() {
                 let ret = parse_type(lexer)?;
                 Ok(Type::Function {
                     args: fields,
-                    ret: Rc::new(ret),
+                    ret: Box::new(ret),
                 })
             } else {
-                Ok(Type::Tuple { fields })
+                Ok(Type::Tuple(fields))
             }
         }
 
@@ -111,12 +115,12 @@ fn parse_type_without_array(lexer: &mut Lexer) -> Result<Type, ParseError> {
                 let name = l.parse_ident()?;
                 l.parse_token(&Token::Colon)?;
                 let ty = parse_type(l)?;
-                Ok((name, Rc::new(ty)))
+                Ok((name, ty))
             })?;
 
             let fields = build_hashmap_from_entries(fields)?;
 
-            Ok(Type::Struct { fields })
+            Ok(Type::Struct(fields))
         }
 
         tok => Err(ParseError::UnexpectedToken(tok.clone())),

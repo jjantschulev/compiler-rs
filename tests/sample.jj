@@ -1,43 +1,33 @@
-import a as c, b, from "path/to/file";
-
-type MyType = {
-    name: string[3],
-    age: int,
-    fish: (&int) => void
-}[][3];
-
-while 1 {
-    type X = Foo;
-}
-
-let person: MyType = {
-    name: ["jordan", "i", "jantschulev"],
-    age: 123
-};
-
-let printf: (string) => void = (var: string): int => {
-    var = var + 1;
-    var += 1;
-};
-
-loop {
-    ((((({v : person.p.age + 23})))));
-}
-
-/* 
-import sub from "lib/subtract"
-
-type X = {
+type Person = {
     name: string,
     age: int,
-    print: (printer: &any) => X,
-}
+    //initials: char[2],
+};
 
-let add = (lhs: int, rhs: int): int => {
-    let sum: int = lhs + rhs;
-    return sum;
-}
- 
-add(123, 345)
 
-*/
+let alice = {
+    name: "Alice",
+    age: 23,
+    initials: ['A', 'A'],
+};
+
+let bob: Person = {
+    name: "Bob",
+    age: 24,
+    initials: ['B', 'B'],
+};
+
+type LinkedList = {
+    val: Person,
+    next: &LinkedList,
+};
+
+let list: LinkedList = {
+    val: alice, 
+    next: null,
+};
+
+list.next = & {
+    val: bob,
+    next: null,
+};

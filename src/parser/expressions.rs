@@ -4,7 +4,7 @@ use crate::lexer::{lexer::Lexer, token::Token};
 
 use super::{
     helpers::{build_hashmap_from_entries, parse_list, ParseError},
-    statements::{parse_block, Block, Statement},
+    statements::{parse_block, Block},
     types::{parse_type, Type},
 };
 
@@ -23,6 +23,7 @@ pub enum Expression {
         ret: Type,
         body: Block,
     },
+    TupleLiteral(Vec<Expression>),
 
     Identifier(String),
 
@@ -44,8 +45,12 @@ pub enum Expression {
     Or(Box<Expression>, Box<Expression>),
     Not(Box<Expression>),
 
-    Block(Vec<Statement>, Box<Expression>),
+    Ref(Box<Expression>),
+    Deref(Box<Expression>),
 
+    Null,
+
+    // Block(Vec<Statement>, Box<Expression>),
     Call {
         expr: Box<Expression>,
         args: Vec<Expression>,
@@ -58,10 +63,10 @@ pub enum Expression {
         expr: Box<Expression>,
         field: String,
     },
-    Cast {
-        expr: Box<Expression>,
-        typ: Type,
-    },
+    // Cast {
+    //     expr: Box<Expression>,
+    //     typ: Type,
+    // },
 }
 
 pub fn parse_expression(lexer: &mut Lexer) -> Result<Expression, ParseError> {
@@ -190,8 +195,20 @@ fn parse_e7(lexer: &mut Lexer) -> Result<Expression, ParseError> {
     }
 }
 
-// Call/Index/Dot
 fn parse_e8(lexer: &mut Lexer) -> Result<Expression, ParseError> {
+    if lexer.parse_token(&Token::Ref).is_ok() {
+        let expr = parse_e8(lexer)?;
+        Ok(Expression::Ref(Box::new(expr)))
+    } else if lexer.parse_token(&Token::Mul).is_ok() {
+        let expr = parse_e8(lexer)?;
+        Ok(Expression::Deref(Box::new(expr)))
+    } else {
+        parse_e9(lexer)
+    }
+}
+
+// Call/Index/Dot
+fn parse_e9(lexer: &mut Lexer) -> Result<Expression, ParseError> {
     let mut expr = parse_literal(lexer)?;
     loop {
         match lexer.expect_peek()? {
@@ -235,6 +252,7 @@ fn parse_literal(lexer: &mut Lexer) -> Result<Expression, ParseError> {
     lexer
         .parse_int()
         .map(|v| Expression::Int(v))
+        .or_else(|_| lexer.parse_token(&Token::Null).map(|_| Expression::Null))
         .or_else(|_| lexer.parse_float().map(|v| Expression::Float(v)))
         .or_else(|_| lexer.parse_char().map(|v| Expression::Char(v)))
         .or_else(|_| lexer.parse_bool().map(|v| Expression::Bool(v)))
@@ -242,15 +260,22 @@ fn parse_literal(lexer: &mut Lexer) -> Result<Expression, ParseError> {
         .or_else(|_| lexer.parse_ident().map(|v| Expression::Identifier(v)))
         .or_else(|_| parse_struct_literal(lexer))
         .or_else(|_| parse_array_literal(lexer))
-        .or_else(|e| {
+        .or_else(|_| {
             if is_func_literal(lexer).is_ok() {
                 parse_function_literal(lexer)
-            } else if lexer.parse_token(&Token::LParen).is_ok() {
-                let expr = parse_expression(lexer)?;
-                lexer.parse_token(&Token::RParen)?;
-                Ok(expr)
             } else {
-                Err(e)
+                let items = parse_list(
+                    lexer,
+                    &Token::LParen,
+                    &Token::Comma,
+                    &Token::RParen,
+                    parse_expression,
+                )?;
+                if items.len() == 1 {
+                    Ok(items.into_iter().next().unwrap())
+                } else {
+                    Ok(Expression::TupleLiteral(items))
+                }
             }
         })
 }
