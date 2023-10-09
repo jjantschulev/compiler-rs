@@ -1,6 +1,4 @@
-
-
-import a, b, from "path/to/file";
+import a as c, b, from "path/to/file";
 
 type MyType = {
     name: string[3],
@@ -12,12 +10,19 @@ while 1 {
     type X = Foo;
 }
 
-let printf: (string) => void = 0xFFFFabe231de321;
+let person: MyType = {
+    name: ["jordan", "i", "jantschulev"],
+    age: 123
+};
+
+let printf: (string) => void = (var: string): int => {
+    var = var + 1;
+    var += 1;
+};
 
 loop {
-    (((((12.34)))));
+    ((((({v : person.p.age + 23})))));
 }
-
 
 /* 
 import sub from "lib/subtract"

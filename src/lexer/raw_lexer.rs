@@ -1,4 +1,4 @@
-use super::token_type::TokenType;
+use super::token::Token;
 
 #[derive(Debug, Clone)]
 pub struct RawLexer<'a> {
@@ -52,14 +52,14 @@ impl<'a> RawLexer<'a> {
 }
 
 impl<'a> Iterator for RawLexer<'a> {
-    type Item = TokenType;
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.consume_till_next_token();
 
         let view = &self.input[self.index..];
 
-        let (next_tok, len) = TokenType::parse_from_str(view)?;
+        let (next_tok, len) = Token::parse_from_str(view)?;
 
         self.index += len;
 

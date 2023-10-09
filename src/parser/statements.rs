@@ -1,4 +1,4 @@
-use crate::lexer::{lexer::Lexer, token_type::TokenType};
+use crate::lexer::{lexer::Lexer, token::Token};
 
 use super::{
     expressions::{parse_expression, Expression},
@@ -6,7 +6,7 @@ use super::{
     types::{parse_type, Type},
 };
 
-type Block = Vec<Statement>;
+pub type Block = Vec<Statement>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
@@ -38,6 +38,27 @@ pub enum Statement {
         step: Option<Expression>,
         body: Block,
     },
+    Assign {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    AddAssign {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    SubAssign {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    MulAssign {
+        lhs: Expression,
+        rhs: Expression,
+    },
+    DivAssign {
+        lhs: Expression,
+        rhs: Expression,
+    },
+
     Return(Option<Expression>),
     Break,
     Continue,
@@ -63,11 +84,11 @@ pub fn parse_block(lexer: &mut Lexer, enclosed_by_brackets: bool) -> Result<Bloc
     let mut statements = Vec::new();
 
     if enclosed_by_brackets {
-        lexer.parse_token(&TokenType::LBrace)?;
+        lexer.parse_token(&Token::LBrace)?;
     }
 
     loop {
-        if enclosed_by_brackets && lexer.parse_token(&TokenType::RBrace).is_ok() {
+        if enclosed_by_brackets && lexer.parse_token(&Token::RBrace).is_ok() {
             break;
         }
         match lexer.peek() {
@@ -81,47 +102,47 @@ pub fn parse_block(lexer: &mut Lexer, enclosed_by_brackets: bool) -> Result<Bloc
 
 pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
     match lexer.expect_peek()? {
-        TokenType::Type => {
+        Token::Type => {
             lexer.next();
             let name = lexer.parse_ident()?;
-            lexer.parse_token(&TokenType::Assign)?;
+            lexer.parse_token(&Token::Assign)?;
             let typ = parse_type(lexer)?;
-            lexer.parse_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&Token::Semicolon)?;
             Ok(Statement::TypeDef { name, typ })
         }
 
-        TokenType::Let => {
+        Token::Let => {
             lexer.next();
             let name = lexer.parse_ident()?;
 
             let typ = match lexer.expect_peek()? {
-                TokenType::Colon => {
+                Token::Colon => {
                     lexer.next();
                     Some(parse_type(lexer)?)
                 }
                 _ => None,
             };
 
-            lexer.parse_token(&TokenType::Assign)?;
+            lexer.parse_token(&Token::Assign)?;
 
             let expr = parse_expression(lexer)?;
 
-            lexer.parse_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&Token::Semicolon)?;
 
             Ok(Statement::VarDef { name, typ, expr })
         }
 
-        TokenType::Import => {
+        Token::Import => {
             let idents = parse_list(
                 lexer,
-                &TokenType::Import,
-                &TokenType::Comma,
-                &TokenType::From,
+                &Token::Import,
+                &Token::Comma,
+                &Token::From,
                 |lexer| {
                     let name = lexer.parse_ident()?;
 
                     match lexer.expect_peek()? {
-                        TokenType::As => {
+                        Token::As => {
                             lexer.next();
                             let alias = lexer.parse_ident()?;
                             Ok(ImportIdentifier { name, alias })
@@ -136,7 +157,7 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
 
             let path = lexer.parse_string()?;
 
-            lexer.parse_token(&TokenType::Semicolon)?;
+            lexer.parse_token(&Token::Semicolon)?;
 
             Ok(Statement::Import {
                 path,
@@ -144,14 +165,14 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
             })
         }
 
-        TokenType::While => {
+        Token::While => {
             lexer.next();
             let cond = parse_expression(lexer)?;
             let body = parse_block(lexer, true)?;
             Ok(Statement::While { cond, body })
         }
 
-        TokenType::Loop => {
+        Token::Loop => {
             lexer.next();
             let body = parse_block(lexer, true)?;
             Ok(Statement::Loop(body))
@@ -159,8 +180,31 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
 
         _ => {
             let expr = parse_expression(lexer)?;
-            lexer.parse_token(&TokenType::Semicolon)?;
-            Ok(Statement::Expr(expr))
+
+            if lexer.parse_token(&Token::Assign).is_ok() {
+                let rhs = parse_expression(lexer)?;
+                lexer.parse_token(&Token::Semicolon)?;
+                Ok(Statement::Assign { lhs: expr, rhs })
+            } else if lexer.parse_token(&Token::AddAssign).is_ok() {
+                let rhs = parse_expression(lexer)?;
+                lexer.parse_token(&Token::Semicolon)?;
+                Ok(Statement::AddAssign { lhs: expr, rhs })
+            } else if lexer.parse_token(&Token::SubAssign).is_ok() {
+                let rhs = parse_expression(lexer)?;
+                lexer.parse_token(&Token::Semicolon)?;
+                Ok(Statement::SubAssign { lhs: expr, rhs })
+            } else if lexer.parse_token(&Token::MulAssign).is_ok() {
+                let rhs = parse_expression(lexer)?;
+                lexer.parse_token(&Token::Semicolon)?;
+                Ok(Statement::MulAssign { lhs: expr, rhs })
+            } else if lexer.parse_token(&Token::SubAssign).is_ok() {
+                let rhs = parse_expression(lexer)?;
+                lexer.parse_token(&Token::Semicolon)?;
+                Ok(Statement::SubAssign { lhs: expr, rhs })
+            } else {
+                lexer.parse_token(&Token::Semicolon)?;
+                Ok(Statement::Expr(expr))
+            }
         }
     }
 }

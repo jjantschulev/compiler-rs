@@ -6,5 +6,5 @@ fn main() {
 
     let mut lexer = Lexer::new(&source);
 
-    dbg! { parse_block(&mut lexer, false) };
+    dbg! { parse_block(&mut lexer, false).unwrap() };
 }
