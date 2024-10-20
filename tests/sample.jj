@@ -1,33 +1,7 @@
-type Person = {
-    name: string,
-    age: int,
-    //initials: char[2],
+let add_one = (input: int): int => {
+    let x = input;
+    x += 1;
+    return x;
 };
 
-
-let alice = {
-    name: "Alice",
-    age: 23,
-    initials: ['A', 'A'],
-};
-
-let bob: Person = {
-    name: "Bob",
-    age: 24,
-    initials: ['B', 'B'],
-};
-
-type LinkedList = {
-    val: Person,
-    next: &LinkedList,
-};
-
-let list: LinkedList = {
-    val: alice, 
-    next: null,
-};
-
-list.next = & {
-    val: bob,
-    next: null,
-};
+let six = add_one(5);

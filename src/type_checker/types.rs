@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::parser::types::Type;
 
-use super::{Scope, TypeError};
+use super::{expressions::check_expr, Scope, TypeError};
 
 pub fn check_type(ty: &Type, scope: &Scope) -> Result<Type, TypeError> {
     match ty {
@@ -46,5 +46,11 @@ pub fn check_type(ty: &Type, scope: &Scope) -> Result<Type, TypeError> {
             Some(ty) => Ok(ty.clone()),
             None => Err(TypeError::InvalidIdentifier(ident.clone())),
         },
+        Type::TypeOf(expr) => {
+            dbg!("check_type", expr);
+            let exp = check_expr(expr, scope)?;
+            dbg!(&exp);
+            Ok(exp)
+        }
     }
 }

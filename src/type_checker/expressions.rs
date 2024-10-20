@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::parser::{expressions::Expression, types::Type};
+use crate::{
+    parser::{expressions::Expression, types::Type},
+    type_checker::types::check_type,
+};
 
 use super::{statements::check_block, Scope, TypeError};
 
@@ -83,12 +86,26 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
         Expression::FunctionLiteral { args, ret, body } => {
             let mut arg_types = Vec::new();
             for (_, ty) in args {
-                arg_types.push(Box::new(ty.clone()));
+                let ty = check_type(ty, scope)?;
+                arg_types.push(Box::new(ty));
             }
-            let ret = Box::new(ret.clone());
+            let ret = Box::new(check_type(ret, scope)?);
 
             let mut scope = scope.create_child();
-            check_block(body, &mut scope)?;
+
+            // Insert the arguments into the scope
+            for (name, ty) in args {
+                scope.set_var(name, ty.clone());
+            }
+
+            let ret_type = check_block(body, &mut scope)?;
+
+            if ret_type != *ret {
+                return Err(TypeError::Unexpected {
+                    got: ret_type,
+                    expected: *ret,
+                });
+            }
 
             dbg!("FunctionScope:", scope);
 

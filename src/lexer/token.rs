@@ -20,6 +20,7 @@ pub enum Token {
     Let,
     Yeet,
     Null,
+    TypeOf,
 
     // Control Flow
     If,
@@ -169,6 +170,7 @@ impl Token {
             "as" => Some(Token::As),
             "yeet" => Some(Token::Yeet),
             "null" => Some(Token::Null),
+            "typeof" => Some(Token::TypeOf),
 
             // Control Flow
             "if" => Some(Token::If),

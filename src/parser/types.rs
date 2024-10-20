@@ -2,7 +2,10 @@ use std::{boxed::Box, collections::HashMap};
 
 use crate::lexer::{lexer::Lexer, token::Token};
 
-use super::helpers::{build_hashmap_from_entries, parse_list, ParseError};
+use super::{
+    expressions::{parse_expression, Expression},
+    helpers::{build_hashmap_from_entries, parse_list, ParseError},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -25,6 +28,7 @@ pub enum Type {
         args: Vec<Box<Type>>,
         ret: Box<Type>,
     },
+    TypeOf(Box<Expression>),
 }
 
 pub fn parse_type(lexer: &mut Lexer) -> Result<Type, ParseError> {
@@ -121,6 +125,14 @@ fn parse_type_without_array(lexer: &mut Lexer) -> Result<Type, ParseError> {
             let fields = build_hashmap_from_entries(fields)?;
 
             Ok(Type::Struct(fields))
+        }
+
+        Token::TypeOf => {
+            lexer.next();
+            lexer.parse_token(&Token::LParen)?;
+            let expr = parse_expression(lexer)?;
+            lexer.parse_token(&Token::RParen)?;
+            Ok(Type::TypeOf(Box::new(expr)))
         }
 
         tok => Err(ParseError::UnexpectedToken(tok.clone())),

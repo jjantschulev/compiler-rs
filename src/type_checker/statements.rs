@@ -6,14 +6,29 @@ use crate::parser::{
 
 use super::{expect_type, expressions::check_expr, types::check_type, Scope, TypeError};
 
-pub fn check_block(block: &Block, scope: &mut Scope) -> Result<(), TypeError> {
+pub fn check_block(block: &Block, scope: &mut Scope) -> Result<Type, TypeError> {
+    let mut ret_type = None;
     for statement in block {
-        check_statement(statement, scope)?;
+        let stmt_ret = check_statement(statement, scope)?;
+        if let Some(stmt_ret) = stmt_ret {
+            if let Some(ret_type) = ret_type {
+                if ret_type != stmt_ret {
+                    return Err(TypeError::Unexpected {
+                        got: stmt_ret,
+                        expected: ret_type,
+                    });
+                }
+            }
+            ret_type = Some(stmt_ret);
+        }
     }
-    Ok(())
+    Ok(ret_type.unwrap_or(Type::Void))
 }
 
-pub fn check_statement(statement: &Statement, scope: &mut Scope) -> Result<(), TypeError> {
+pub fn check_statement(
+    statement: &Statement,
+    scope: &mut Scope,
+) -> Result<Option<Type>, TypeError> {
     match statement {
         Statement::Import {
             path: _,
@@ -34,28 +49,30 @@ pub fn check_statement(statement: &Statement, scope: &mut Scope) -> Result<(), T
                 }
             }
             scope.set_var(&name, typ.unwrap_or(expr_typ));
-            Ok(())
+            Ok(None)
         }
 
         Statement::TypeDef { name, typ } => {
             scope.set_type(&name, typ.clone());
-            check_type(&typ, scope)?;
+            let typ = check_type(&typ, scope)?;
+            scope.set_type(&name, typ);
 
-            Ok(())
+            Ok(None)
         }
 
         Statement::Expr(expr) => {
             check_expr(&expr, scope)?;
-            Ok(())
+            Ok(None)
         }
 
-        Statement::Continue => Ok(()),
-        Statement::Break => Ok(()),
+        Statement::Continue => Ok(None),
+        Statement::Break => Ok(None),
         Statement::Return(expr) => {
             if let Some(expr) = expr {
-                check_expr(&expr, scope)?;
+                let ret_type = check_expr(&expr, scope)?;
+                return Ok(Some(ret_type));
             }
-            Ok(())
+            Ok(None)
         }
 
         Statement::Assign { lhs, rhs } => {
@@ -70,7 +87,7 @@ pub fn check_statement(statement: &Statement, scope: &mut Scope) -> Result<(), T
             if !can_assign_to_expr(&lhs) {
                 return Err(TypeError::Invalid(lhs_typ));
             }
-            Ok(())
+            Ok(None)
         }
 
         Statement::If {
@@ -83,24 +100,28 @@ pub fn check_statement(statement: &Statement, scope: &mut Scope) -> Result<(), T
             check_block(body, scope)?;
 
             match else_stmt {
-                ElseStatement::Block(block) => check_block(block, scope)?,
-                ElseStatement::If(stmt) => check_statement(stmt, scope)?,
+                ElseStatement::Block(block) => {
+                    check_block(block, scope)?;
+                }
+                ElseStatement::If(stmt) => {
+                    check_statement(stmt, scope)?;
+                }
                 ElseStatement::None => {}
             }
 
-            Ok(())
+            Ok(None)
         }
 
         Statement::Loop(body) => {
             check_block(body, scope)?;
-            Ok(())
+            Ok(None)
         }
 
         Statement::While { cond, body } => {
             let cond_typ = check_expr(&cond, scope)?;
             expect_type(cond_typ, Type::Bool)?;
             check_block(body, scope)?;
-            Ok(())
+            Ok(None)
         }
     }
 }
