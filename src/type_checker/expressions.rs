@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     parser::{expressions::Expression, types::Type},
-    type_checker::types::check_type,
+    type_checker::{statements::is_assignable, types::check_type},
 };
 
 use super::{statements::check_block, Scope, TypeError};
@@ -37,10 +37,10 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
 
         Expression::Equal(lhs, rhs) => check_same_type(lhs, rhs, scope),
 
-        Expression::GreaterEqual(lhs, rhs) => check_binop_expr(lhs, rhs, scope),
-        Expression::GreaterThan(lhs, rhs) => check_binop_expr(lhs, rhs, scope),
-        Expression::LessEqual(lhs, rhs) => check_binop_expr(lhs, rhs, scope),
-        Expression::LessThan(lhs, rhs) => check_binop_expr(lhs, rhs, scope),
+        Expression::GreaterEqual(lhs, rhs) => check_binop_cmp_expr(lhs, rhs, scope),
+        Expression::GreaterThan(lhs, rhs) => check_binop_cmp_expr(lhs, rhs, scope),
+        Expression::LessEqual(lhs, rhs) => check_binop_cmp_expr(lhs, rhs, scope),
+        Expression::LessThan(lhs, rhs) => check_binop_cmp_expr(lhs, rhs, scope),
 
         Expression::And(lhs, rhs) => check_bool_op(lhs, rhs, scope),
         Expression::Or(lhs, rhs) => check_bool_op(lhs, rhs, scope),
@@ -134,12 +134,12 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
         Expression::Ref(expr) => Ok(Type::Ptr(Box::new(check_expr(expr, scope)?))),
 
         Expression::Deref(expr) => match check_expr(expr, scope)? {
-            Type::Ptr(ty) => Ok(*ty),
+            Type::Ptr(ty) => Ok(check_type(&ty, scope)?),
             ty => Err(TypeError::Invalid(ty)),
         },
 
         Expression::Identifier(name) => match scope.get_var(name) {
-            Some(ty) => Ok(ty),
+            Some(ty) => Ok(check_type(&ty, scope)?),
             None => Err(TypeError::InvalidIdentifier(name.clone())),
         },
 
@@ -147,7 +147,7 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
             let typ = check_expr(expr, scope)?;
             match typ {
                 Type::Struct(fields) => match fields.get(field) {
-                    Some(ty) => Ok(ty.clone()),
+                    Some(ty) => Ok(check_type(ty, scope)?),
                     None => Err(TypeError::InvalidIdentifier(field.clone())),
                 },
                 ty => Err(TypeError::Invalid(ty)),
@@ -157,6 +157,7 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
         Expression::Call { expr, args } => {
             let typ = check_expr(expr, scope)?;
             let typ_for_errors = typ.clone();
+            println!("Call: {:?}", typ);
             match typ {
                 Type::Function {
                     args: arg_types,
@@ -167,8 +168,12 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
                     }
 
                     for (arg, ty) in args.iter().zip(arg_types.iter()) {
-                        if check_expr(arg, scope)? != **ty {
-                            return Err(TypeError::Invalid(typ_for_errors));
+                        let arg_type = check_expr(arg, scope)?;
+                        if !is_assignable(&arg_type, &ty, scope) {
+                            return Err(TypeError::Unexpected {
+                                got: arg_type,
+                                expected: *ty.clone(),
+                            });
                         }
                     }
 
@@ -177,6 +182,31 @@ pub fn check_expr(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
                 ty => Err(TypeError::Invalid(ty)),
             }
         }
+    }
+}
+
+pub fn infer_function_type_signature(expr: &Expression, scope: &Scope) -> Result<Type, TypeError> {
+    match expr {
+        Expression::FunctionLiteral { args, ret, body: _ } => {
+            let mut arg_types = Vec::new();
+            for (_, ty) in args {
+                let ty = check_type(ty, scope)?;
+                arg_types.push(Box::new(ty));
+            }
+            let ret = Box::new(check_type(ret, scope)?);
+
+            Ok(Type::Function {
+                args: arg_types,
+                ret,
+            })
+        }
+        _ => Err(TypeError::Unexpected {
+            got: Type::Void,
+            expected: Type::Function {
+                args: vec![],
+                ret: Box::new(Type::Void),
+            },
+        }),
     }
 }
 
@@ -200,6 +230,15 @@ pub fn check_binop_expr(
     }
 }
 
+pub fn check_binop_cmp_expr(
+    lhs: &Expression,
+    rhs: &Expression,
+    scope: &Scope,
+) -> Result<Type, TypeError> {
+    check_binop_expr(lhs, rhs, scope)?;
+    Ok(Type::Bool)
+}
+
 fn check_bool_op(lhs: &Expression, rhs: &Expression, scope: &Scope) -> Result<Type, TypeError> {
     let lhs = check_expr(lhs, scope)?;
     let rhs = check_expr(rhs, scope)?;
@@ -217,7 +256,7 @@ fn check_same_type(lhs: &Expression, rhs: &Expression, scope: &Scope) -> Result<
     let lhs = check_expr(lhs, scope)?;
     let rhs = check_expr(rhs, scope)?;
     if lhs == rhs {
-        Ok(lhs)
+        Ok(Type::Bool)
     } else {
         Err(TypeError::Unexpected {
             got: lhs,

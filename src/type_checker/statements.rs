@@ -4,7 +4,12 @@ use crate::parser::{
     types::Type,
 };
 
-use super::{expect_type, expressions::check_expr, types::check_type, Scope, TypeError};
+use super::{
+    expect_type,
+    expressions::{check_expr, infer_function_type_signature},
+    types::check_type,
+    Scope, TypeError,
+};
 
 pub fn check_block(block: &Block, scope: &mut Scope) -> Result<Type, TypeError> {
     let mut ret_type = None;
@@ -39,6 +44,13 @@ pub fn check_statement(
 
         Statement::VarDef { name, typ, expr } => {
             let typ = typ.as_ref().map(|typ| check_type(typ, scope)).transpose()?;
+
+            // If the expression is a function literal, infer the type signature before fully parsing the body
+            // This allows us to use the function type in the body (aka recursive functions)
+            if let Ok(function_type) = infer_function_type_signature(&expr, scope) {
+                scope.set_var(name, function_type);
+            }
+
             let expr_typ = check_expr(&expr, scope)?;
             if let Some(ref typ) = typ {
                 if !is_assignable(&expr_typ, typ, scope) {
@@ -136,7 +148,7 @@ fn can_assign_to_expr(expr: &Expression) -> bool {
     }
 }
 
-fn is_assignable(src: &Type, dst: &Type, scope: &Scope) -> bool {
+pub fn is_assignable(src: &Type, dst: &Type, scope: &Scope) -> bool {
     if src == dst {
         return true;
     }

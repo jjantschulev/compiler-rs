@@ -156,15 +156,78 @@ pub fn parse_statement(lexer: &mut Lexer) -> Result<Statement, ParseError> {
             Ok(Statement::Loop(body))
         }
 
+        Token::Break => {
+            lexer.next();
+            lexer.parse_token(&Token::Semicolon)?;
+            Ok(Statement::Break)
+        }
+
+        Token::Continue => {
+            lexer.next();
+            lexer.parse_token(&Token::Semicolon)?;
+            Ok(Statement::Continue)
+        }
+
         Token::Return => {
             lexer.next();
             let expr = if lexer.parse_token(&Token::Semicolon).is_ok() {
                 None
             } else {
-                Some(parse_expression(lexer)?)
+                let expr = parse_expression(lexer)?;
+                lexer.parse_token(&Token::Semicolon)?;
+                Some(expr)
             };
-            lexer.parse_token(&Token::Semicolon)?;
             Ok(Statement::Return(expr))
+        }
+
+        Token::If => {
+            lexer.next();
+            let cond = parse_expression(lexer)?;
+            let body = parse_block(lexer, true)?;
+
+            let mut if_stmt = Statement::If {
+                body,
+                cond,
+                else_stmt: ElseStatement::None,
+            };
+            // Keep track of the last if statement to add else ifs to it
+            let mut last_if_stmt = &mut if_stmt;
+            while lexer.parse_token(&Token::Else).is_ok() {
+                if let Ok(_) = lexer.parse_token(&Token::If) {
+                    let cond = parse_expression(lexer)?;
+                    let body = parse_block(lexer, true)?;
+                    let else_if_stmt = Statement::If {
+                        cond,
+                        body,
+                        else_stmt: ElseStatement::None,
+                    };
+
+                    if let Statement::If {
+                        ref mut else_stmt, ..
+                    } = *last_if_stmt
+                    {
+                        *else_stmt = ElseStatement::If(Box::new(else_if_stmt));
+                    }
+                } else {
+                    let else_block = parse_block(lexer, true)?;
+                    if let Statement::If {
+                        ref mut else_stmt, ..
+                    } = *last_if_stmt
+                    {
+                        *else_stmt = ElseStatement::Block(else_block);
+                    }
+                    break;
+                }
+                // If the last if statement is an else if, update the last if statement to the inner if statement
+                if let Statement::If {
+                    else_stmt: ElseStatement::If(ref mut if_stmt),
+                    ..
+                } = *last_if_stmt
+                {
+                    last_if_stmt = if_stmt;
+                }
+            }
+            Ok(if_stmt)
         }
 
         _ => {

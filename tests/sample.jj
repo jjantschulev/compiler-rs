@@ -1,7 +1,41 @@
-let add_one = (input: int): int => {
+type Person = {
+    name: string,
+    age: int,
+    fav_color: string,
+};
+
+let bob: Person = {
+    name: "bob",
+    age: 21,
+    fav_color: "32",
+};
+
+let alice = {
+    name: "alice",
+    age: 21,
+    fav_color: "blue",
+};
+
+bob = alice;
+
+type Adder = (int) => int;
+
+let add_one: Adder = (input: int): int => {
     let x = input;
     x += 1;
     return x;
 };
+
+let add_two = (input: int): int => {
+    let x = input;
+    x += 1;
+    return x;
+};
+
+let functions = [add_one, add_two];
+
+type Functions = typeof(functions);
+
+let twenty_four = functions[1](23);
 
 let six = add_one(5);

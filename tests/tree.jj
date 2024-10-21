@@ -1,0 +1,32 @@
+type Person = {
+  name: string,
+  age: int,
+};
+
+type Tree = {
+    key: int,
+    value: &Person,
+    left: &Tree,
+    right: &Tree,
+};
+
+let tree: Tree = {
+  key: 10,
+  value: null,
+  left: null,
+  right: null,
+};
+
+let binary_search = (tree: &Tree, key: int): &Person => {
+  if (*tree).key == key {
+    return (*tree).value;
+  }
+  if key > (*tree).key {
+    return binary_search(&(*tree).right, key);
+  } else {
+    return binary_search(&(*tree).left, key);
+  }
+};
+
+let person = *binary_search(&tree, 10);
+
